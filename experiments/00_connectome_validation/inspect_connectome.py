@@ -3,10 +3,11 @@ import pandas as pd
 
 NEURONS = "data/raw/flywire/neurons.csv.gz"
 CONNECTIONS = "data/raw/flywire/connections_princeton.csv.gz"
-
+CELL_TYPES = "data/raw/flywire/consolidated_cell_types.csv.gz"
 
 neurons = pd.read_csv(NEURONS)
 connections = pd.read_csv(CONNECTIONS)
+cell_types = pd.read_csv(CELL_TYPES)
 
 
 print("=== ProtoFly: FlyWire FAFB ===")
@@ -40,11 +41,19 @@ print("=== Example neuron ===")
 
 neuron_id = int(neurons.iloc[0]["root_id"])
 neuron = neurons[neurons["root_id"] == neuron_id].iloc[0]
+cell_type_match = cell_types[cell_types["root_id"] == neuron_id]
+
+if len(cell_type_match) > 0:
+    cell_type = cell_type_match.iloc[0]["primary_type"]
+else:
+    cell_type = "Unknown"
+
 
 print(f"Neuron ID:        {neuron_id}")
 print(f"Group:            {neuron['group']}")
 print(f"Neurotransmitter: {neuron['nt_type']}")
 print(f"NT confidence:    {neuron['nt_type_score']}")
+print(f"Cell type:        {cell_type}")
 
 outputs = connections[
     connections["pre_root_id"] == neuron_id
