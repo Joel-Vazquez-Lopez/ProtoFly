@@ -7,6 +7,11 @@ name = "protofly"
 version = "0.1.0"
 description = "Emergent communication in connectome-constrained digital Drosophila."
 requires-python = ">=3.11"
+dependencies = [
+    "pandas",
+    "pyarrow",
+    "brian2",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
