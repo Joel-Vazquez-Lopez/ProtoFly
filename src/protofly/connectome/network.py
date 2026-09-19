@@ -20,30 +20,77 @@ NT_SIGN = {
     "OCT": 1,
 }
 
-
 def build_flywire_network(neuron_ids, neurons_df, connections_df):
     """Build a connectome-constrained Brian2 network."""
 
-    neuron_ids = list(neuron_ids)
-    index = {root_id: i for i, root_id in enumerate(neuron_ids)}
+    # Stable ordering makes runs easier to reproduce.
+    neuron_ids = sorted(neuron_ids)
 
-    annotations = (
-        neurons_df
-        .set_index("root_id")
-        .reindex(neuron_ids)
-    )
+    index = {
+        root_id: i
+        for i, root_id in enumerate(neuron_ids)
+    }
+
+    # --------------------------------------------------
+    # Select all FlyWire connections inside the circuit
+    # --------------------------------------------------
 
     circuit = connections_df[
         connections_df["pre_root_id"].isin(index)
         & connections_df["post_root_id"].isin(index)
     ].copy()
 
-    # Combine neuropil-specific rows belonging to the same directed pair.
+    # Combine neuropil-specific rows for the same pair.
     circuit = (
-        circuit.groupby(["pre_root_id", "post_root_id"], as_index=False)
-        ["syn_count"]
+        circuit
+        .groupby(
+            ["pre_root_id", "post_root_id"],
+            as_index=False,
+            sort=False,
+        )["syn_count"]
         .sum()
     )
+
+    # --------------------------------------------------
+    # Map FlyWire IDs -> Brian2 integer indices
+    # --------------------------------------------------
+
+    circuit["pre_index"] = (
+        circuit["pre_root_id"]
+        .map(index)
+        .astype("int32")
+    )
+
+    circuit["post_index"] = (
+        circuit["post_root_id"]
+        .map(index)
+        .astype("int32")
+    )
+
+    # --------------------------------------------------
+    # Neurotransmitter sign of presynaptic neuron
+    # --------------------------------------------------
+
+    nt_lookup = (
+        neurons_df
+        .set_index("root_id")["nt_type"]
+    )
+
+    circuit["nt_type"] = (
+        circuit["pre_root_id"]
+        .map(nt_lookup)
+    )
+
+    circuit["sign"] = (
+        circuit["nt_type"]
+        .map(NT_SIGN)
+        .fillna(0)
+        .astype("int8")
+    )
+
+    # --------------------------------------------------
+    # Create neurons
+    # --------------------------------------------------
 
     group = NeuronGroup(
         len(neuron_ids),
@@ -59,6 +106,10 @@ def build_flywire_network(neuron_ids, neurons_df, connections_df):
     group.g = 0 * mV
     group.rfc = DEFAULT_PARAMS["t_rfc"]
 
+    # --------------------------------------------------
+    # Create synapses
+    # --------------------------------------------------
+
     synapses = Synapses(
         group,
         group,
@@ -67,25 +118,16 @@ def build_flywire_network(neuron_ids, neurons_df, connections_df):
         delay=DEFAULT_PARAMS["t_dly"],
     )
 
-    pre_indices = []
-    post_indices = []
-    weights = []
+    synapses.connect(
+        i=circuit["pre_index"].to_numpy(),
+        j=circuit["post_index"].to_numpy(),
+    )
 
-    for row in circuit.itertuples(index=False):
-        pre_id = row.pre_root_id
-        post_id = row.post_root_id
+    weights = (
+        circuit["sign"].to_numpy()
+        * circuit["syn_count"].to_numpy()
+    )
 
-        nt_type = annotations.loc[pre_id, "nt_type"]
-        sign = NT_SIGN.get(nt_type, 0)
-
-        pre_indices.append(index[pre_id])
-        post_indices.append(index[post_id])
-
-        weights.append(
-            sign * row.syn_count * DEFAULT_PARAMS["w_syn"]
-        )
-
-    synapses.connect(i=pre_indices, j=post_indices)
-    synapses.w = weights
+    synapses.w = weights * DEFAULT_PARAMS["w_syn"]
 
     return group, synapses, index, circuit

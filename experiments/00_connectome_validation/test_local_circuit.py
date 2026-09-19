@@ -8,6 +8,7 @@ from brian2 import (
     Network,
     Hz,
     ms,
+    seed,
 )
 
 from protofly.connectome.network import build_flywire_network
@@ -15,6 +16,7 @@ from protofly.neural.lif import DEFAULT_PARAMS
 
 
 A = 720575940621619627
+seed(42)
 
 # Load FlyWire data
 neurons_df = pd.read_csv(
