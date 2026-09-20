@@ -152,3 +152,69 @@ This does not establish that either substrate is a complete biological
 representation of the living fly brain. It validates the computational
 implementation against the published reference model under a matched
 historical substrate.
+
+## Neurotransmitter-sign sensitivity diagnostic
+
+The current FlyWire/Codex substrate showed a sharp change in global
+recruitment as sugar-sensory stimulation increased from 60 to 100 Hz.
+
+Under the default ProtoFly sign convention:
+
+| Frequency | Active neurons (mean ± SD) |
+|---|---:|
+| 60 Hz | 3460.2 ± 108.8 |
+| 80 Hz | 2283.0 ± 1039.5 |
+| 100 Hz | 812.8 ± 68.7 |
+
+The unusually large variance at 80 Hz suggested that the model was
+operating near a transition between high- and low-recruitment regimes.
+
+To determine whether this behaviour depended on the assumed functional
+sign of glutamatergic neurons, the experiment was repeated while keeping
+the connectome, LIF dynamics, sensory neurons, stimulation protocol, and
+random-seed schedule fixed.
+
+Two diagnostic conditions were tested:
+
+1. glutamatergic outgoing connections blocked;
+2. glutamatergic outgoing connections treated as excitatory.
+
+The frequency-dependent collapse disappeared in both controls.
+
+| Sign condition | 60 Hz | 80 Hz | 100 Hz |
+|---|---:|---:|---:|
+| Default (GLUT inhibitory) | 3460 | 2283 | 813 |
+| GLUT blocked | 6385 | 6422 | 6410 |
+| GLUT excitatory | 15757 | 15767 | 15730 |
+
+Treating glutamate as excitatory also produced very high global activity,
+exceeding one million spikes per simulated second in these experiments.
+
+### Interpretation
+
+The 60–100 Hz transition is strongly dependent on the functional-sign
+assignment of glutamatergic neurons.
+
+This does not establish that the transition is a biological phenomenon.
+The FlyWire connectome provides predicted neurotransmitter identities,
+but neurotransmitter identity alone does not completely determine the
+functional sign of every synapse. In particular, glutamatergic effects
+depend on postsynaptic receptor context.
+
+ProtoFly therefore retains glutamate as inhibitory for the Phase-0
+whole-brain model. This convention follows the approximation used in the
+published Shiu et al. whole-brain Drosophila model and is broadly
+consistent with observations that glutamatergic signalling in the fly
+brain is often inhibitory.
+
+The alternative sensitivity conditions are diagnostics only and are not
+candidate replacements for the default model.
+
+Consequently, frequency-dependent global recruitment in the current
+ProtoFly model should be interpreted as a property of the
+connectome-constrained model under its stated neurotransmitter-sign
+assumptions, rather than as established biological behaviour.
+
+A future receptor-resolved or experimentally constrained effect model
+could replace this approximation without changing the underlying
+FlyWire connectome.
