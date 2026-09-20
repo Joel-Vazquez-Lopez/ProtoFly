@@ -87,3 +87,68 @@ The purpose of Experiment 00C is only to establish:
     reproducible propagation of neural activity
 
 Learning mechanisms will be introduced only after the fixed-connectome dynamics have been independently validated.
+
+## Historical-substrate reproduction test
+
+To distinguish implementation differences from connectome-materialization
+differences, ProtoFly's neural dynamics were tested using the historical
+connectivity substrate distributed with the Shiu et al. whole-brain
+Drosophila model.
+
+The test used:
+
+- 127,400 neurons
+- 14,687,178 directed connections
+- 52,793,639 anatomical synapses
+- all 21 right-hemisphere sugar-sensing GRNs
+- 100 Hz Poisson stimulation
+- 1 second per trial
+- the signed connectivity weights from the original Shiu dataset
+- ProtoFly's Brian2 LIF dynamics and stimulation implementation
+
+### Results
+
+| Model | MN9 response at 100 Hz |
+|---|---:|
+| Original Shiu implementation | 67.03 ± 6.71 spikes/s |
+| ProtoFly implementation on Shiu substrate | 66.80 ± 5.73 spikes/s |
+
+For the ProtoFly reproduction test, mean total network activity was
+9,684.4 ± 307.7 spikes per trial. The original Shiu result was
+9,635.8 ± 413.5 spikes per trial.
+
+The MN9 mean therefore differed by only 0.23 spikes/s (~0.34%), while
+mean total spike count differed by ~0.5%.
+
+### Interpretation
+
+ProtoFly reproduces the published computational model closely when both
+implementations operate on the same historical connectome substrate.
+
+This indicates that the substantially higher MN9 response observed with
+ProtoFly's current FlyWire/Codex substrate (~128 spikes/s at 100 Hz)
+should not be attributed simply to an error in the LIF or sensory-input
+implementation.
+
+The historical Shiu and current ProtoFly connectome representations differ
+substantially:
+
+| Property | Shiu historical substrate | Current ProtoFly substrate |
+|---|---:|---:|
+| Directed neuron pairs | 14,687,178 | 3,732,460 |
+| Anatomical synapses | 52,793,639 | 50,666,648 |
+| Shared directed pairs | 2,025,373 | 2,025,373 |
+
+Only 54.26% of current ProtoFly directed pairs occur in the historical
+Shiu substrate. However, synapse counts on shared pairs are strongly
+correlated (Pearson r = 0.963).
+
+Therefore, the current working interpretation is that the difference in
+network response is primarily associated with differences in connectome
+materialization and/or connectivity annotation rather than the basic
+ProtoFly LIF implementation.
+
+This does not establish that either substrate is a complete biological
+representation of the living fly brain. It validates the computational
+implementation against the published reference model under a matched
+historical substrate.
