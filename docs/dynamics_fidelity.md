@@ -218,3 +218,81 @@ assumptions, rather than as established biological behaviour.
 A future receptor-resolved or experimentally constrained effect model
 could replace this approximation without changing the underlying
 FlyWire connectome.
+
+## Post-stimulus dynamics in the closed sensorimotor loop
+
+During the first closed sensorimotor feeding experiment, sustained
+100 Hz stimulation of the identified sugar GRNs produced a relatively
+restricted whole-brain activity regime. After three seconds of
+stimulation, removal of the sensory input produced an unexpected
+transition to a broader and persistent activity regime.
+
+Under the default neurotransmitter-sign assumptions (`GLUT = -1`),
+the stimulated period recruited approximately 750 neurons and produced
+approximately 27,000 spikes per second. After removal of the sugar-GRN
+input, activity increased to approximately 3,200–3,700 active neurons
+and 82,000–93,000 spikes per second and persisted for at least six
+seconds.
+
+This effect was not explained simply by simulation duration. In a
+matched control in which the 100 Hz sugar-GRN stimulation was maintained
+for nine seconds, activity remained in the restricted regime throughout
+the experiment, with approximately 733–804 active neurons and
+26,700–28,600 spikes per second.
+
+### Glutamate-sign causal diagnostic
+
+Because previous frequency-response experiments showed that global
+recruitment is strongly sensitive to the treatment of glutamatergic
+connections, the post-stimulus experiment was repeated with
+glutamatergic outgoing influence blocked (`GLUT = 0`). All other
+neurotransmitter-sign assumptions were unchanged.
+
+With glutamatergic transmission blocked, the network occupied a much
+broader and more active regime during the 100 Hz stimulation itself:
+approximately 6,100–6,300 neurons were active, producing approximately
+288,000–330,000 spikes per second.
+
+Removing the sensory input did not eliminate persistent global activity.
+Approximately 5,800 neurons remained active and the network continued
+to produce approximately 309,000–314,000 spikes per second during the
+subsequent unstimulated windows.
+
+Therefore, blocking glutamatergic transmission does not abolish
+persistent post-stimulus activity. Instead, it substantially changes
+the dynamical regime occupied by the network and removes the pronounced
+global ON-to-OFF transition observed under the default sign convention.
+
+The feeding-related motor population behaved differently from the
+global network. Under the glutamate-blocked condition, MN6, MN8, and MN9
+were strongly recruited during sugar-GRN stimulation, showed only small
+residual activity during the first post-stimulus second, and were silent
+from the second post-stimulus second onward despite persistent high
+whole-brain activity.
+
+This demonstrates that persistent global activity in the current model
+does not imply persistent recruitment of the feeding-related motor
+population.
+
+### Interpretation and limitation
+
+These experiments establish a reproducible dependence of whole-brain
+dynamics on both sensory input and the neurotransmitter-sign
+approximation. They do not establish a biological interpretation for
+the persistent activity or the post-stimulus transition.
+
+In particular, the post-stimulus state should not currently be
+interpreted as memory, hunger, food seeking, or another behavioural or
+cognitive state.
+
+For the present ProtoFly stage, the result is treated as a characterized
+limitation of the current connectome-constrained LIF model. The model
+remains useful for testing anatomically grounded sensory-to-motor
+propagation, while global dynamical states must be interpreted with
+appropriate caution.
+
+The temporary embodiment rule that any feeding-related motor spike can
+trigger an environmental feeding action should also not be interpreted
+as a biological motor threshold. Future embodiment work should replace
+this rule with a more explicitly defined and validated motor-decoding
+mechanism.
