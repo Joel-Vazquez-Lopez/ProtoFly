@@ -53,3 +53,36 @@ def feeding_motor_root_ids():
             ("L", data["left"]),
         )
     }
+
+# Descending neurons associated with steering during walking.
+#
+# Root IDs refer to FlyWire FAFB v783 and were verified as present in
+# ProtoFly's current substrate on 2026-09-24.
+#
+# DNa01 and DNa02 are bilateral descending-neuron pairs whose activity
+# has been experimentally associated with steering. Their eventual
+# mapping to simulated body rotation must preserve the experimentally
+# established bilateral activity relationship rather than treating
+# either neuron as a symbolic left/right command.
+
+STEERING_DESCENDING_NEURONS = {
+    "DNa01": {
+        "right": 720575940644438551,
+        "left": 720575940627787609,
+    },
+    "DNa02": {
+        "right": 720575940604737708,
+        "left": 720575940629327659,
+    },
+}
+
+
+def steering_descending_root_ids():
+    return {
+        f"{name}_{side}": root_id
+        for name, data in STEERING_DESCENDING_NEURONS.items()
+        for side, root_id in (
+            ("R", data["right"]),
+            ("L", data["left"]),
+        )
+    }
