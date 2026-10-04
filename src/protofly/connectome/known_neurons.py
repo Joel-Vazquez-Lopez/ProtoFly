@@ -54,6 +54,110 @@ def feeding_motor_root_ids():
         )
     }
 
+
+# ---------------------------------------------------------------------
+# Olfactory sensory neurons
+# ---------------------------------------------------------------------
+
+# Antennal Orco-like olfactory population used for lateralized sensory
+# experiments.
+#
+# The population is defined by the intersection of:
+#   1. glomeruli experimentally observed as Orco-positive in
+#      Task et al. (2022), and
+#   2. sensory / olfactory neurons entering through the antennal nerve
+#      (AN) in the FlyWire FAFB v783 annotation table.
+#
+# VA4 is intentionally excluded because the FlyWire population is
+# overwhelmingly assigned to the maxillary/labial nerve (MxLbN), rather
+# than the antennal nerve.
+#
+# In the pinned annotation table this definition yields:
+#   32 glomerular types
+#   1530 annotation rows
+#   763 left
+#   767 right
+#
+# When resolved against ProtoFly's local FAFB v783 substrate:
+#   1529 root IDs are present
+#   762 left
+#   767 right
+#
+# The single absent annotation root (720575940628215433, ORN_DM4,
+# VFB identity fw042443) shares that VFB identity with root
+# 720575940621100117, which is present in the local substrate.
+#
+# This is an experimentally grounded approximation of the antennal
+# Orco-LexA population, not a claim that receptor expression is encoded
+# directly by FlyWire.
+
+ANTENNAL_ORCO_GLOMERULI = {
+    "D",
+    "DA1",
+    "DA2",
+    "DA3",
+    "DA4l",
+    "DA4m",
+    "DC1",
+    "DC2",
+    "DC3",
+    "DL1",
+    "DL3",
+    "DL4",
+    "DL5",
+    "DM1",
+    "DM2",
+    "DM3",
+    "DM4",
+    "DM5",
+    "DM6",
+    "VA1d",
+    "VA1v",
+    "VA2",
+    "VA3",
+    "VA5",
+    "VA6",
+    "VA7m",
+    "VC3",
+    "VC4",
+    "VM2",
+    "VM3",
+    "VM5d",
+    "VM5v",
+}
+def antennal_orco_root_ids(annotations_df, substrate_root_ids=None):
+    """Return left/right FlyWire root IDs for the antennal Orco-like population."""
+
+    cell_types = {
+        f"ORN_{glomerulus}"
+        for glomerulus in ANTENNAL_ORCO_GLOMERULI
+    }
+
+    population = annotations_df[
+        (annotations_df["super_class"] == "sensory")
+        & (annotations_df["cell_class"] == "olfactory")
+        & (annotations_df["nerve"] == "AN")
+        & (annotations_df["cell_type"].isin(cell_types))
+        & (annotations_df["side"].isin(["left", "right"]))
+    ].copy()
+
+    if substrate_root_ids is not None:
+        substrate_root_ids = set(substrate_root_ids)
+        population = population[
+            population["root_id"].isin(substrate_root_ids)
+        ]
+
+    return {
+        "left": population.loc[
+            population["side"] == "left",
+            "root_id",
+        ].astype(int).tolist(),
+        "right": population.loc[
+            population["side"] == "right",
+            "root_id",
+        ].astype(int).tolist(),
+    }
+
 # Descending neurons associated with steering during walking.
 #
 # Root IDs refer to FlyWire FAFB v783 and were verified as present in
