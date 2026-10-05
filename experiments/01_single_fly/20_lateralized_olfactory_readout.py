@@ -207,139 +207,140 @@ network = Network(
 network.store("initial")
 
 # ------------------------------------------------------------
-# Single control trial.
+# Repeated lateralized olfactory trials.
+# ------------------------------------------------------------
+
+conditions = {
+    "control": (0 * Hz, 0 * Hz),
+    "left": (ORN_RATE, 0 * Hz),
+    "right": (0 * Hz, ORN_RATE),
+    "bilateral": (ORN_RATE, ORN_RATE),
+}
+
+results = []
+
+print()
+print("=== LATERALIZED OLFACTORY TRIALS ===")
+print()
+
+for trial in range(N_TRIALS):
+    trial_seed = BASE_SEED + trial
+
+    for condition, (left_rate, right_rate) in conditions.items():
+        network.restore("initial")
+        seed(trial_seed)
+
+        left_stimulus.rates = left_rate
+        right_stimulus.rates = right_rate
+
+        network.run(STIMULUS_DURATION)
+
+        counts = spikes.count[:]
+
+        dna02_left = int(
+            counts[steering_indices["DNa02_L"]]
+        )
+
+        dna02_right = int(
+            counts[steering_indices["DNa02_R"]]
+        )
+
+        drive = dna02_left - dna02_right
+        active_neurons = int((counts > 0).sum())
+        total_spikes = int(counts.sum())
+
+        results.append(
+            {
+                "trial": trial + 1,
+                "seed": trial_seed,
+                "condition": condition,
+                "left": dna02_left,
+                "right": dna02_right,
+                "drive": drive,
+                "active": active_neurons,
+                "total": total_spikes,
+            }
+        )
+
+        print(
+            f"Trial {trial + 1:2d} | "
+            f"seed {trial_seed:3d} | "
+            f"{condition:9s} | "
+            f"DNa02_L {dna02_left:3d} | "
+            f"DNa02_R {dna02_right:3d} | "
+            f"L-R {drive:+4d} | "
+            f"active {active_neurons:5d} | "
+            f"total {total_spikes:7d}"
+        )
+
+# ------------------------------------------------------------
+# Summary.
 # ------------------------------------------------------------
 
 print()
-print("=== CONTROL: NO ORN STIMULATION ===")
+print("=== SUMMARY ===")
 
-network.restore("initial")
-seed(BASE_SEED)
+for condition in conditions:
+    condition_results = [
+        result
+        for result in results
+        if result["condition"] == condition
+    ]
 
-left_stimulus.rates = 0 * Hz
-right_stimulus.rates = 0 * Hz
+    left = np.array(
+        [result["left"] for result in condition_results],
+        dtype=float,
+    )
 
-network.run(STIMULUS_DURATION)
+    right = np.array(
+        [result["right"] for result in condition_results],
+        dtype=float,
+    )
 
-counts = spikes.count[:]
+    drive = np.array(
+        [result["drive"] for result in condition_results],
+        dtype=float,
+    )
 
-dna02_left = int(
-    counts[steering_indices["DNa02_L"]]
-)
+    active = np.array(
+        [result["active"] for result in condition_results],
+        dtype=float,
+    )
 
-dna02_right = int(
-    counts[steering_indices["DNa02_R"]]
-)
+    total = np.array(
+        [result["total"] for result in condition_results],
+        dtype=float,
+    )
 
-active_neurons = int((counts > 0).sum())
-total_spikes = int(counts.sum())
+    print()
+    print(condition.upper())
+    print(
+        f"DNa02_L: {left.mean():.2f} ± "
+        f"{left.std(ddof=1):.2f} spikes"
+    )
+    print(
+        f"DNa02_R: {right.mean():.2f} ± "
+        f"{right.std(ddof=1):.2f} spikes"
+    )
+    print(
+        f"L - R:   {drive.mean():+.2f} ± "
+        f"{drive.std(ddof=1):.2f} spikes"
+    )
+    print(
+        f"Active:  {active.mean():.2f} ± "
+        f"{active.std(ddof=1):.2f} neurons"
+    )
+    print(
+        f"Total:   {total.mean():.2f} ± "
+        f"{total.std(ddof=1):.2f} spikes"
+    )
 
-print(f"DNa02_L:      {dna02_left}")
-print(f"DNa02_R:      {dna02_right}")
-print(f"L - R:        {dna02_left - dna02_right:+d}")
-print(f"Active:       {active_neurons:,}")
-print(f"Total spikes: {total_spikes:,}")
-
-
-# ------------------------------------------------------------
-# Single left-antennal stimulation trial.
-# ------------------------------------------------------------
-
-print()
-print("=== LEFT ANTENNAL ORN STIMULATION ===")
-
-network.restore("initial")
-seed(BASE_SEED)
-
-left_stimulus.rates = ORN_RATE
-right_stimulus.rates = 0 * Hz
-
-network.run(STIMULUS_DURATION)
-
-counts = spikes.count[:]
-
-dna02_left = int(
-    counts[steering_indices["DNa02_L"]]
-)
-
-dna02_right = int(
-    counts[steering_indices["DNa02_R"]]
-)
-
-active_neurons = int((counts > 0).sum())
-total_spikes = int(counts.sum())
-
-print(f"DNa02_L:      {dna02_left}")
-print(f"DNa02_R:      {dna02_right}")
-print(f"L - R:        {dna02_left - dna02_right:+d}")
-print(f"Active:       {active_neurons:,}")
-print(f"Total spikes: {total_spikes:,}")
-
-# ------------------------------------------------------------
-# Single right-antennal stimulation trial.
-# ------------------------------------------------------------
-
-print()
-print("=== RIGHT ANTENNAL ORN STIMULATION ===")
-
-network.restore("initial")
-seed(BASE_SEED)
-
-left_stimulus.rates = 0 * Hz
-right_stimulus.rates = ORN_RATE
-
-network.run(STIMULUS_DURATION)
-
-counts = spikes.count[:]
-
-dna02_left = int(
-    counts[steering_indices["DNa02_L"]]
-)
-
-dna02_right = int(
-    counts[steering_indices["DNa02_R"]]
-)
-
-active_neurons = int((counts > 0).sum())
-total_spikes = int(counts.sum())
-
-print(f"DNa02_L:      {dna02_left}")
-print(f"DNa02_R:      {dna02_right}")
-print(f"L - R:        {dna02_left - dna02_right:+d}")
-print(f"Active:       {active_neurons:,}")
-print(f"Total spikes: {total_spikes:,}")
-
-
-# ------------------------------------------------------------
-# Single bilateral-antennal stimulation trial.
-# ------------------------------------------------------------
-
-print()
-print("=== BILATERAL ANTENNAL ORN STIMULATION ===")
-
-network.restore("initial")
-seed(BASE_SEED)
-
-left_stimulus.rates = ORN_RATE
-right_stimulus.rates = ORN_RATE
-
-network.run(STIMULUS_DURATION)
-
-counts = spikes.count[:]
-
-dna02_left = int(
-    counts[steering_indices["DNa02_L"]]
-)
-
-dna02_right = int(
-    counts[steering_indices["DNa02_R"]]
-)
-
-active_neurons = int((counts > 0).sum())
-total_spikes = int(counts.sum())
-
-print(f"DNa02_L:      {dna02_left}")
-print(f"DNa02_R:      {dna02_right}")
-print(f"L - R:        {dna02_left - dna02_right:+d}")
-print(f"Active:       {active_neurons:,}")
-print(f"Total spikes: {total_spikes:,}")
+    print(
+        f"L > R:   {int((drive > 0).sum())}/{N_TRIALS}"
+    )
+    print(
+        f"R > L:   {int((drive < 0).sum())}/{N_TRIALS}"
+    )
+    print(
+        f"L = R:   {int((drive == 0).sum())}/{N_TRIALS}"
+    )
