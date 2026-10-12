@@ -19,9 +19,11 @@ from brian2 import (
     PoissonGroup,
     Synapses,
     SpikeMonitor,
+    StateMonitor,
     Network,
     Hz,
     ms,
+    mV,
     seed,
 )
 
@@ -282,6 +284,20 @@ def build_fly_neural_system():
 
     spikes = SpikeMonitor(neurons)
 
+    motor_indices = [
+        dng100_left_index,
+        dng100_right_index,
+        dna02_left_index,
+        dna02_right_index,
+    ]
+
+    motor_states = StateMonitor(
+        neurons,
+        variables=["v", "g"],
+        record=motor_indices,
+        dt=1 * ms,
+    )
+
     network = Network(
         neurons,
         synapses,
@@ -292,6 +308,7 @@ def build_fly_neural_system():
         left_sensory_synapses,
         right_sensory_synapses,
         spikes,
+        motor_states,
     )
 
     return {
@@ -299,6 +316,7 @@ def build_fly_neural_system():
         "neurons": neurons,
         "synapses": synapses,
         "spikes": spikes,
+        "motor_states": motor_states,
         "left_stimulus": left_stimulus,
         "right_stimulus": right_stimulus,
         "dng100_left_index": dng100_left_index,
@@ -802,3 +820,178 @@ print(
         ]
     ].to_string(index=False)
 )
+
+
+print()
+print("=== PRESYNAPTIC ACTIVITY DIAGNOSTIC ===")
+
+# Match FlyWire root IDs to Brian2 neuron indices.
+neuron_index = {
+    root_id: i
+    for i, root_id in enumerate(sorted(neuron_ids))
+}
+
+nt_lookup = neurons_df.set_index("root_id")["nt_type"]
+
+# Use the same neurotransmitter-sign convention as network.py.
+nt_sign = {
+    "ACH": 1,
+    "GABA": -1,
+    "GLUT": -1,
+    "DA": 1,
+    "SER": 1,
+    "OCT": 1,
+}
+
+for fly_name, brain in [
+    ("Fly A", fly_a_brain),
+    ("Fly B", fly_b_brain),
+]:
+    spike_counts = np.asarray(brain["spikes"].count[:])
+
+    print(f"\n{fly_name}:")
+
+    for name, root_id in target_ids.items():
+        inputs = connections_df[
+            connections_df["post_root_id"] == root_id
+        ].copy()
+
+        inputs["sign"] = (
+            inputs["pre_root_id"]
+            .map(nt_lookup)
+            .map(nt_sign)
+            .fillna(0)
+        )
+
+        inputs["pre_index"] = inputs["pre_root_id"].map(
+            neuron_index
+        )
+
+        inputs = inputs.dropna(subset=["pre_index"])
+
+        inputs["presynaptic_spikes"] = spike_counts[
+            inputs["pre_index"].astype(int).to_numpy()
+        ]
+
+        inputs["weighted_activity"] = (
+            inputs["presynaptic_spikes"]
+            * inputs["syn_count"]
+        )
+
+        positive = inputs.loc[
+            inputs["sign"] == 1, "weighted_activity"
+        ].sum()
+
+        negative = inputs.loc[
+            inputs["sign"] == -1, "weighted_activity"
+        ].sum()
+
+        print(
+            f"  {name}: "
+            f"positive={positive}, "
+            f"negative={negative}, "
+            f"net={positive - negative}"
+        )
+
+
+        print()
+        
+print("=== EARLY VS LATE PRESYNAPTIC ACTIVITY ===")
+
+neuron_index = {
+    root_id: i
+    for i, root_id in enumerate(sorted(neuron_ids))
+}
+
+for fly_name, brain in [
+    ("Fly A", fly_a_brain),
+    ("Fly B", fly_b_brain),
+]:
+    monitor = brain["spikes"]
+    spike_times_ms = np.asarray(monitor.t / ms)
+    spike_indices = np.asarray(monitor.i)
+
+    print(f"\n{fly_name}:")
+
+    for name in ("DNg100_L", "DNg100_R", "DNa02_L", "DNa02_R"):
+        root_id = target_ids[name]
+
+        inputs = connections_df[
+            connections_df["post_root_id"] == root_id
+        ].copy()
+
+        inputs["sign"] = (
+            inputs["pre_root_id"]
+            .map(nt_lookup)
+            .map(nt_sign)
+            .fillna(0)
+        )
+
+        inputs["pre_index"] = inputs["pre_root_id"].map(neuron_index)
+        inputs = inputs.dropna(subset=["pre_index"])
+
+        print(f"  {name}:")
+
+        for label, start, end in [
+            ("early", 0, 100),
+            ("late", 100, 1000),
+        ]:
+            mask = (
+                (spike_times_ms >= start)
+                & (spike_times_ms < end)
+            )
+
+            counts = np.bincount(
+                spike_indices[mask],
+                minlength=len(neuron_ids),
+            )
+
+            weighted = (
+                counts[inputs["pre_index"].astype(int).to_numpy()]
+                * inputs["syn_count"].to_numpy()
+                * inputs["sign"].to_numpy()
+            )
+
+            # Normalize by window duration for comparison.
+            net_rate = weighted.sum() / ((end - start) / 1000)
+
+            print(f"    {label}: net signed activity/s = {net_rate:.1f}")
+
+print()
+print("=== MOTOR MEMBRANE DYNAMICS ===")
+
+motor_names = [
+    "DNg100_L",
+    "DNg100_R",
+    "DNa02_L",
+    "DNa02_R",
+]
+
+for fly_name, brain in [
+    ("Fly A", fly_a_brain),
+    ("Fly B", fly_b_brain),
+]:
+    states = brain["motor_states"]
+    times_ms = np.asarray(states.t / ms)
+
+    print(f"\n{fly_name}:")
+
+    for row, name in enumerate(motor_names):
+        voltage = np.asarray(states.v[row] / mV)
+        drive = np.asarray(states.g[row] / mV)
+
+        print(f"  {name}:")
+
+        for label, start, end in [
+            ("early", 0, 100),
+            ("late", 100, 1000),
+        ]:
+            mask = (times_ms >= start) & (times_ms < end)
+
+            print(
+                f"    {label}: "
+                f"mean_v={voltage[mask].mean():.2f} mV, "
+                f"mean_g={drive[mask].mean():.2f} mV, "
+                f"min_v={voltage[mask].min():.2f} mV, "
+                f"max_v={voltage[mask].max():.2f} mV"
+            )
