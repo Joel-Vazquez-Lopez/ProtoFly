@@ -20,7 +20,7 @@ NT_SIGN = {
     "OCT": 1,
 }
 
-def build_flywire_network(neuron_ids, neurons_df, connections_df):
+def build_flywire_network(neuron_ids, neurons_df, connections_df,preserve_synaptic_drive=False,):
     """Build a connectome-constrained Brian2 network."""
 
     # Stable ordering makes runs easier to reproduce.
@@ -96,7 +96,7 @@ def build_flywire_network(neuron_ids, neurons_df, connections_df):
         len(neuron_ids),
         model=EQUATIONS,
         threshold=THRESHOLD,
-        reset=RESET,
+        reset="v = v_rst" if preserve_synaptic_drive else RESET,
         refractory="rfc",
         method="linear",
         namespace=DEFAULT_PARAMS,
